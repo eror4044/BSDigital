@@ -33,6 +33,7 @@ builder.Services.AddScoped<IOrderBookRepository, OrderBookRepository>();
 builder.Services.AddSingleton<IOrderBookState, OrderBookState>();
 builder.Services.AddSingleton<IQuoteService, QuoteService>();
 builder.Services.AddSingleton<OrderBookCache>();
+builder.Services.AddHostedService<OrderBookRetentionService>();
 
 var app = builder.Build();
 
