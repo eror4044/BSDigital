@@ -11,5 +11,10 @@ namespace BSD_fullstack_API.Data
         }
 
         public DbSet<OrderBookSnapshot> OrderBookSnapshots { get; set; }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<OrderBookSnapshot>()
+                .HasIndex(x => x.Timestamp);
+        }
     }
 }

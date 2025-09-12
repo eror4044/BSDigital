@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
 namespace BSD_fullstack_API.Services;
+
 public record QuoteDto(
     decimal RequestedAmountBtc,
     decimal FilledAmountBtc,
@@ -8,6 +9,7 @@ public record QuoteDto(
     decimal AveragePriceEur,
     bool SufficientLiquidity,
     DateTime SnapshotTimestampUtc);
+
 
 [ApiController]
 [Route("api/[controller]")]
@@ -17,12 +19,24 @@ public class QuotesController : ControllerBase
     public QuotesController(IQuoteService quotes) => _quotes = quotes;
 
     [HttpGet]
-    public IActionResult Get([FromQuery] decimal amount, [FromQuery] string type = "buy")
+    public IActionResult Get([FromQuery] string amount, [FromQuery] string type = "buy")
     {
-        if (amount <= 0)
+        if (string.IsNullOrWhiteSpace(amount))
+            return BadRequest(new { error = "amount is required" });
+
+        var normalized = amount.Replace(',', '.');
+
+        if (!decimal.TryParse(normalized, System.Globalization.NumberStyles.Any,
+                              System.Globalization.CultureInfo.InvariantCulture, out var amountVal))
+        {
+            return BadRequest(new { error = "invalid amount format" });
+        }
+
+        if (amountVal <= 0)
             return BadRequest(new { error = "amount must be > 0" });
 
-        var q = _quotes.GetQuote(amount);
-        return Ok(q);
+        var result = _quotes.GetQuote(amountVal);
+
+        return Ok(result);
     }
 }

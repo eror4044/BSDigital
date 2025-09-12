@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using System.Globalization;
 using System.Net.WebSockets;
 using System.Text;
+using System.Diagnostics;
 
 namespace BSD_fullstack_API.Services;
 
@@ -14,6 +15,12 @@ public class BitstampService : BackgroundService
     private readonly IHubContext<OrderBookHub> _hubContext;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly OrderBookCache _cache;
+
+    private readonly Stopwatch _broadcastTimer = Stopwatch.StartNew();
+    private readonly Stopwatch _snapshotTimer = Stopwatch.StartNew();
+    private const int BroadcastIntervalMs = 500;
+    private const int SnapshotMinIntervalMs = 500;
+    private string? _lastSnapshotHash = null;
 
     public BitstampService(
         ILogger<BitstampService> logger,
@@ -105,24 +112,37 @@ public class BitstampService : BackgroundService
                             _cache.Bids = bids;
                             _cache.Asks = asks;
 
-                            await _hubContext.Clients.All.SendAsync("orderbook:update", new
+                            if (_broadcastTimer.ElapsedMilliseconds > BroadcastIntervalMs)
                             {
-                                bids = bids.Select(b => new[] {
-                                    b.Price.ToString(CultureInfo.InvariantCulture),
-                                    b.Amount.ToString(CultureInfo.InvariantCulture)
-                                }),
-                                asks = asks.Select(a => new[] {
-                                    a.Price.ToString(CultureInfo.InvariantCulture),
-                                    a.Amount.ToString(CultureInfo.InvariantCulture)
-                                })
-                            }, cancellationToken: stoppingToken);
+                                _broadcastTimer.Restart();
 
-                            using var scope = _scopeFactory.CreateScope();
-                            var repo = scope.ServiceProvider.GetRequiredService<IOrderBookRepository>();
-                            await repo.SaveSnapshotAsync(bids, asks, stoppingToken);
+                                await _hubContext.Clients.All.SendAsync("orderbook:update", new
+                                {
+                                    bids = bids.Select(b => new[] {
+                                        b.Price.ToString(CultureInfo.InvariantCulture),
+                                        b.Amount.ToString(CultureInfo.InvariantCulture)
+                                    }),
+                                    asks = asks.Select(a => new[] {
+                                        a.Price.ToString(CultureInfo.InvariantCulture),
+                                        a.Amount.ToString(CultureInfo.InvariantCulture)
+                                    })
+                                }, cancellationToken: stoppingToken);
 
-                            _logger.LogInformation("OrderBook update sent, cached & saved: {b} bids, {a} asks",
-                                bids.Count, asks.Count);
+                                _logger.LogInformation("OrderBook broadcasted ({b} bids, {a} asks)", bids.Count, asks.Count);
+                            }
+
+                            var hash = ComputeSnapshotHash(bids, asks);
+                            if (_snapshotTimer.ElapsedMilliseconds > SnapshotMinIntervalMs && _lastSnapshotHash != hash)
+                            {
+                                _snapshotTimer.Restart();
+                                _lastSnapshotHash = hash;
+
+                                using var scope = _scopeFactory.CreateScope();
+                                var repo = scope.ServiceProvider.GetRequiredService<IOrderBookRepository>();
+                                await repo.SaveSnapshotAsync(bids, asks, stoppingToken);
+
+                                _logger.LogInformation("OrderBook snapshot saved (bids={b}, asks={a})", bids.Count, asks.Count);
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -137,5 +157,25 @@ public class BitstampService : BackgroundService
                 await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
+    }
+
+    private static string ComputeSnapshotHash(
+        List<(decimal Price, decimal Amount)> bids,
+        List<(decimal Price, decimal Amount)> asks,
+        int topN = 100)
+    {
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        var sb = new StringBuilder();
+
+        foreach (var b in bids.OrderByDescending(x => x.Price).Take(topN))
+            sb.Append(b.Price).Append('|').Append(b.Amount).Append(';');
+
+        sb.Append('#');
+
+        foreach (var a in asks.OrderBy(x => x.Price).Take(topN))
+            sb.Append(a.Price).Append('|').Append(a.Amount).Append(';');
+
+        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+        return Convert.ToHexString(sha.ComputeHash(bytes));
     }
 }
