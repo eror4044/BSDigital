@@ -1,0 +1,57 @@
+services:
+  api:
+    build:
+      context: ./BSD_fullstack_API/BSD_fullstack_API
+      dockerfile: Dockerfile
+    container_name: bsd_fullstack_api
+    ports:
+      - "5000:8080"
+      - "5001:8081"
+    restart: unless-stopped
+    environment:
+      - ConnectionStrings__OrderBookDb=Host=db;Port=5432;Database=orderbookdb;Username=postgres;Password=postgres
+      - DOTNET_RUNNING_IN_CONTAINER=true
+    depends_on:
+      - db
+
+  migrate:
+    build:
+      context: ./BSD_fullstack_API/BSD_fullstack_API
+      dockerfile: Dockerfile
+      target: build
+    container_name: bsd_fullstack_migrate
+    depends_on:
+      - db
+    environment:
+      - ConnectionStrings__OrderBookDb=Host=db;Port=5432;Database=orderbookdb;Username=postgres;Password=postgres
+    entrypoint: >
+      dotnet ef database update
+
+  db:
+    image: postgres:16
+    container_name: bsd_fullstack_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: orderbookdb
+    ports:
+      - "5434:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  client:
+    build:
+      context: ./orderbook-client
+      dockerfile: Dockerfile
+    container_name: bsd_fullstack_client
+    ports:
+      - "5173:5173"
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=http://localhost:5000
+    depends_on:
+      - api
+
+volumes:
+  db_data:

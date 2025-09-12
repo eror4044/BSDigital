@@ -13,13 +13,14 @@ builder.Services.AddHostedService<BitstampService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowVueClient", policy =>
-{
-    policy.WithOrigins("http://localhost:5173")
-          .AllowAnyHeader()
-          .AllowAnyMethod()
-          .AllowCredentials();
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
+
 var env = builder.Environment.EnvironmentName;
 
 builder.Configuration
@@ -36,6 +37,7 @@ builder.Services.AddSingleton<OrderBookCache>();
 builder.Services.AddHostedService<OrderBookRetentionService>();
 
 var app = builder.Build();
+
 
 app.UseCors("AllowVueClient");
 app.UseRouting();
