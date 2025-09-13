@@ -1,5 +1,11 @@
-﻿namespace OrderBook.Application.Services;
+﻿using OrderBook.Application.Interfaces;
+using OrderBook.Application.Models;
 
+namespace OrderBook.Application.Services;
+
+/// <summary>
+/// Represents result of a quote calculation for buying BTC with EUR.
+/// </summary>
 public record QuoteResult(
     decimal Requested,
     decimal Filled,
@@ -7,11 +13,9 @@ public record QuoteResult(
     decimal AveragePrice,
     bool Sufficient,
     DateTime TimestampUtc);
-public interface IQuoteService
-{
-    QuoteResult GetQuote(decimal btcAmount);
-}
 
+
+/// <inheritdoc />
 public class QuoteService : IQuoteService
 {
     private readonly OrderBookCache _cache;
@@ -21,6 +25,7 @@ public class QuoteService : IQuoteService
         _cache = cache;
     }
 
+    /// <inheritdoc />
     public QuoteResult GetQuote(decimal btcAmount)
     {
         var asks = _cache.Asks.OrderBy(a => a.Price).ToList();

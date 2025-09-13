@@ -9,6 +9,12 @@ using System.Diagnostics;
 
 namespace OrderBook.Application.Services;
 
+/// <summary>
+/// Background service for connecting to Bitstamp WebSocket,
+/// receiving live BTC/EUR order book updates,
+/// broadcasting them to clients via SignalR,
+/// and persisting snapshots into the database.
+/// </summary>
 public class BitstampService : BackgroundService
 {
     private readonly ILogger<BitstampService> _logger;
@@ -33,7 +39,7 @@ public class BitstampService : BackgroundService
         _scopeFactory = scopeFactory;
         _cache = cache;
     }
-
+    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
@@ -159,6 +165,9 @@ public class BitstampService : BackgroundService
         }
     }
 
+    /// <summary>
+    /// Computes a hash for snapshot comparison to detect changes.
+    /// </summary>
     private static string ComputeSnapshotHash(
         List<(decimal Price, decimal Amount)> bids,
         List<(decimal Price, decimal Amount)> asks,

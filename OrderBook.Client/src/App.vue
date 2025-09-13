@@ -1,10 +1,11 @@
 <script setup lang="ts">
-  import DepthChart from "./components/DepthChart.vue";
+  import OrderBookView from "./components/OrderBookView.vue";
 </script>
 
 
+
 <template>
-  <DepthChart />
+  <OrderBookView />
 </template>
 
 <style scoped></style>

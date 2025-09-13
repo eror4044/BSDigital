@@ -1,5 +1,6 @@
 ﻿namespace OrderBook.Application.Services;
 
+/// <inheritdoc />
 public class OrderBookState : IOrderBookState
 {
     private readonly object _lock = new();
@@ -7,6 +8,7 @@ public class OrderBookState : IOrderBookState
     private IReadOnlyList<(decimal price, decimal amount)> _asks = Array.Empty<(decimal, decimal)>();
     private DateTime _ts = DateTime.MinValue;
 
+    /// <inheritdoc />
     public void Update(
         IReadOnlyList<(decimal price, decimal amount)> bids,
         IReadOnlyList<(decimal price, decimal amount)> asks)
@@ -19,6 +21,7 @@ public class OrderBookState : IOrderBookState
         }
     }
 
+    /// <inheritdoc />
     public (IReadOnlyList<(decimal price, decimal amount)> bids,
             IReadOnlyList<(decimal price, decimal amount)> asks,
             DateTime timestampUtc) Get()

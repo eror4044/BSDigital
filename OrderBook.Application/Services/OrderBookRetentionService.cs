@@ -3,6 +3,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace OrderBook.Application.Services;
 
+/// <summary>
+/// Background service that periodically removes old order book snapshots
+/// from the database (retention policy).
+/// </summary>
 public class OrderBookRetentionService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
@@ -17,6 +21,7 @@ public class OrderBookRetentionService : BackgroundService
         _logger = logger;
     }
 
+    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
