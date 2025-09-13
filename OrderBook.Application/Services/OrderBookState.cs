@@ -1,4 +1,6 @@
-﻿namespace OrderBook.Application.Services;
+﻿using OrderBook.Application.Interfaces;
+
+namespace OrderBook.Application.Services;
 
 /// <inheritdoc />
 public class OrderBookState : IOrderBookState

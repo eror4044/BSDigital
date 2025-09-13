@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using OrderBook.Application.Data;
+using OrderBook.Application.Data.Repositories;
 using OrderBook.Application.Hubs;
+using OrderBook.Application.Interfaces;
+using OrderBook.Application.Models;
 using OrderBook.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);

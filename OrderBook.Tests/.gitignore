@@ -1,0 +1,49 @@
+# Build results
+/bin/
+/obj/
+/out/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio files
+.vs/
+*.vcxproj.user
+*.dbmdl
+
+# Logs
+*.log
+logs/
+
+# Dependency folders
+packages/
+.nuget/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Dotnet artifacts
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Entity Framework
+Migrations/obj/
+
+# Rider
+.idea/
+
+# Docker
+*.pid
+.env
+
+# Others
+*.swp
+*.bak
+*.tmp
+*.orig

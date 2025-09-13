@@ -1,4 +1,4 @@
-﻿namespace OrderBook.Application.Services;
+﻿namespace OrderBook.Application.Models;
 
 /// <summary>
 /// In-memory cache holding latest bids and asks from Bitstamp stream.

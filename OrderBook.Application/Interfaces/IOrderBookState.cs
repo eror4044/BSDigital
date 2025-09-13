@@ -1,4 +1,4 @@
-﻿namespace OrderBook.Application.Services;
+﻿namespace OrderBook.Application.Interfaces;
 
 /// <summary>
 /// Provides abstraction for maintaining the current in-memory state of the order book.

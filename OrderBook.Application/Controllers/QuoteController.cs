@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using OrderBook.Application.Interfaces;
 using OrderBook.Application.Services;
 
 namespace OrderBook.Application.Controllers;

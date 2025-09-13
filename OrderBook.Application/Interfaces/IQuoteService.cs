@@ -1,4 +1,5 @@
 ﻿using OrderBook.Application.Services;
+namespace OrderBook.Application.Interfaces;
 
 /// <summary>
 /// Provides method for calculating quotes based on current order book.

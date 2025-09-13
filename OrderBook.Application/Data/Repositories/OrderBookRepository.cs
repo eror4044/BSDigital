@@ -1,25 +1,10 @@
-﻿using OrderBook.Application.Models;
+﻿using OrderBook.Application.Interfaces;
+using OrderBook.Application.Models;
 using System.Text.Json;
 
-namespace OrderBook.Application.Data
+namespace OrderBook.Application.Data.Repositories
 {
-    /// <summary>
-    /// Repository interface for persisting order book snapshots.
-    /// </summary>
-    public interface IOrderBookRepository
-    {
-        /// <summary>
-        /// Saves snapshot using generic enumerable objects.
-        /// </summary>
-        Task SaveSnapshotAsync(IEnumerable<object> bids, IEnumerable<object> asks, CancellationToken token);
-
-        /// <summary>
-        /// Saves snapshot using typed bid/ask lists.
-        /// </summary>
-        Task SaveSnapshotAsync(List<(decimal Price, decimal Amount)> bids,
-                               List<(decimal Price, decimal Amount)> asks,
-                               CancellationToken stoppingToken);
-    }
+    
 
     /// <inheritdoc />
     public class OrderBookRepository : IOrderBookRepository
