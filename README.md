@@ -1,3 +1,4 @@
+````markdown
 # 💹 BTC/EUR Order Book — Fullstack Demo
 
 This project demonstrates a **real-time BTC/EUR order book** with:  
@@ -27,35 +28,38 @@ This project demonstrates a **real-time BTC/EUR order book** with:
 ### 1. Clone repository
 ```bash
 git clone https://github.com/your-org/orderbook-demo.git
-cd orderbook-demo
-```
+````
 
 ### 2. Build images
+
 ```bash
 docker compose build
 ```
 
 ### 3. Start database
+
 ```bash
 docker compose up -d db
 ```
 
 ### 4. Apply migrations
+
 ```bash
 docker compose run --rm migrate
 ```
 
 ### 5. Start API and client
+
 ```bash
 docker compose up -d api client
 ```
 
 ### 6. Access services
 
-- **Frontend (Vue)** → [http://localhost:5173](http://localhost:5173)  
-- **API** → [http://localhost:5000](http://localhost:5000)  
-- **SignalR Hub** → [http://localhost:5000/hubs/orderbook](http://localhost:5000/hubs/orderbook)  
-- **PostgreSQL** → `localhost:5434`  
+* **Frontend (Vue)** → [http://localhost:5173](http://localhost:5173)
+* **API** → [http://localhost:5000](http://localhost:5000)
+* **SignalR Hub** → [http://localhost:5000/hubs/orderbook](http://localhost:5000/hubs/orderbook)
+* **PostgreSQL** → `localhost:5434`
 
   ```
   user:     postgres
@@ -64,6 +68,7 @@ docker compose up -d api client
   ```
 
 ### 7. Stop everything
+
 ```bash
 docker compose down
 ```
@@ -74,26 +79,27 @@ docker compose down
 
 ```
 .
-├── BSD_fullstack_API/   # .NET 8 backend (SignalR, EF Core, PostgreSQL)
-├── orderbook-client/    # Vue 3 frontend (Vite + ECharts)
-├── docker-compose.yml   # Orchestration
-└── README.md            # this file
+├── OrderBook.Application/   # .NET 8 backend (SignalR, EF Core, PostgreSQL)
+├── OrderBook.Client/        # Vue 3 frontend (Vite + ECharts)
+├── docker-compose.yml       # Orchestration
+└── README.md                # this file
 ```
 
 ---
 
 ## 🔧 Development Notes
 
-- Ports & credentials are configurable via `.env`
-- Default CORS allows `http://localhost:5173`
-- Snapshots are stored in `OrderBookSnapshots` table
-- EF Core migrations applied via `docker compose run --rm migrate`
-- Client auto-reconnects to SignalR hub
+* Ports & credentials are configurable via `.env`
+* Default CORS allows `http://localhost:5173`
+* Snapshots are stored in `OrderBookSnapshots` table
+* EF Core migrations applied via `docker compose run --rm migrate`
+* Client auto-reconnects to SignalR hub
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Backend** → .NET 8, SignalR, EF Core, PostgreSQL  
-- **Frontend** → Vue 3, Vite, vue-echarts  
-- **Infra** → Docker, Docker Compose  
+* **Backend** → .NET 8, SignalR, EF Core, PostgreSQL
+* **Frontend** → Vue 3, Vite, vue-echarts
+* **Infra** → Docker, Docker Compose
+

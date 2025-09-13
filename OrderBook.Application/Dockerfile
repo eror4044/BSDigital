@@ -12,18 +12,20 @@ WORKDIR /src
 RUN dotnet tool install --global dotnet-ef --version 9.*
 ENV PATH="$PATH:/root/.dotnet/tools"
 
-COPY BSD_fullstack_API.csproj ./
-RUN dotnet restore "./BSD_fullstack_API.csproj"
+# copy csproj and restore dependencies
+COPY OrderBook.Application.csproj ./ 
+RUN dotnet restore "./OrderBook.Application.csproj"
 
+# copy the rest of the source
 COPY . .
-RUN dotnet build "BSD_fullstack_API.csproj" -c Release -o /app/build
+RUN dotnet build "OrderBook.Application.csproj" -c Release -o /app/build
 
 # publish stage
 FROM build AS publish
-RUN dotnet publish "BSD_fullstack_API.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "OrderBook.Application.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # final runtime image
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "BSD_fullstack_API.dll"]
+ENTRYPOINT ["dotnet", "OrderBook.Application.dll"]

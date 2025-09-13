@@ -1,5 +1,5 @@
-﻿using BSD_fullstack_API.Hubs;
-using BSD_fullstack_API.Data;
+﻿using OrderBook.Application.Hubs;
+using OrderBook.Application.Data;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json.Linq;
 using System.Globalization;
@@ -7,7 +7,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Diagnostics;
 
-namespace BSD_fullstack_API.Services;
+namespace OrderBook.Application.Services;
 
 public class BitstampService : BackgroundService
 {

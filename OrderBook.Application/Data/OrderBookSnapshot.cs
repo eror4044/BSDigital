@@ -1,4 +1,4 @@
-﻿namespace BSD_fullstack_API.Models
+﻿namespace OrderBook.Application.Models
 {
     public class OrderBookSnapshot
     {

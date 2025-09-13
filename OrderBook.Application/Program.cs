@@ -1,7 +1,7 @@
-using BSD_fullstack_API.Data;
-using BSD_fullstack_API.Hubs;
-using BSD_fullstack_API.Services;
 using Microsoft.EntityFrameworkCore;
+using OrderBook.Application.Data;
+using OrderBook.Application.Hubs;
+using OrderBook.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

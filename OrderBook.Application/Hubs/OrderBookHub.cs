@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 
-namespace BSD_fullstack_API.Hubs;
+namespace OrderBook.Application.Hubs;
 
 public class OrderBookHub : Hub
 {

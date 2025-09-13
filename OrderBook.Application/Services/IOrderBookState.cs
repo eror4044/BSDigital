@@ -1,4 +1,4 @@
-﻿namespace BSD_fullstack_API.Services;
+﻿namespace OrderBook.Application.Services;
 
 public interface IOrderBookState
 {

@@ -1,7 +1,7 @@
-﻿using BSD_fullstack_API.Models;
+﻿using OrderBook.Application.Models;
 using System.Text.Json;
 
-namespace BSD_fullstack_API.Data
+namespace OrderBook.Application.Data
 {
     public interface IOrderBookRepository
     {

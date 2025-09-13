@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace BSD_fullstack_API.Migrations
+namespace OrderBook.Application.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration

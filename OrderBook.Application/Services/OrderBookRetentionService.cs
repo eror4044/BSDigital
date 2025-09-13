@@ -1,7 +1,7 @@
-﻿using BSD_fullstack_API.Data;
+﻿using OrderBook.Application.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace BSD_fullstack_API.Services;
+namespace OrderBook.Application.Services;
 
 public class OrderBookRetentionService : BackgroundService
 {

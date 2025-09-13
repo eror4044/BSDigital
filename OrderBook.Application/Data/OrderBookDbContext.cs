@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using BSD_fullstack_API.Models;
+using OrderBook.Application.Models;
 
-namespace BSD_fullstack_API.Data
+namespace OrderBook.Application.Data
 {
     public class OrderBookDbContext : DbContext
     {

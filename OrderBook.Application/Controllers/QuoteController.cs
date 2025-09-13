@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using OrderBook.Application.Services;
 
-namespace BSD_fullstack_API.Services;
+namespace OrderBook.Application.Controllers;
 
 public record QuoteDto(
     decimal RequestedAmountBtc,

@@ -1,12 +1,12 @@
 services:
   api:
     build:
-      context: ./BSD_fullstack_API/BSD_fullstack_API
+      context: ./OrderBook.Application
       dockerfile: Dockerfile
-    container_name: bsd_fullstack_api
+    container_name: orderbook_api
     ports:
-      - "5000:8080"
-      - "5001:8081"
+      - "5000:8080"   # HTTP
+      - "5001:8081"   # HTTPS
     restart: unless-stopped
     environment:
       - ConnectionStrings__OrderBookDb=Host=db;Port=5432;Database=orderbookdb;Username=postgres;Password=postgres
@@ -16,20 +16,20 @@ services:
 
   migrate:
     build:
-      context: ./BSD_fullstack_API/BSD_fullstack_API
+      context: ./OrderBook.Application
       dockerfile: Dockerfile
       target: build
-    container_name: bsd_fullstack_migrate
+    container_name: orderbook_migrate
     depends_on:
       - db
     environment:
       - ConnectionStrings__OrderBookDb=Host=db;Port=5432;Database=orderbookdb;Username=postgres;Password=postgres
     entrypoint: >
-      dotnet ef database update
+      sh -c "dotnet ef database update --project OrderBook.Application.csproj --startup-project . --verbose"
 
   db:
     image: postgres:16
-    container_name: bsd_fullstack_db
+    container_name: orderbook_db
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -42,9 +42,9 @@ services:
 
   client:
     build:
-      context: ./orderbook-client
+      context: ./OrderBook.Client
       dockerfile: Dockerfile
-    container_name: bsd_fullstack_client
+    container_name: orderbook_client
     ports:
       - "5173:5173"
     restart: unless-stopped
