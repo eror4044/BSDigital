@@ -45,7 +45,7 @@ function render() {
       left: 35,
       right: 20,
       top: 40,
-      bottom: 40,
+      bottom: 20,
     },
     xAxis: {
       type: "value",

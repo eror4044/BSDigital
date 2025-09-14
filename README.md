@@ -23,6 +23,14 @@ This project demonstrates a **real-time BTC/EUR order book** with:
 
 ---
 
+## 🎥 Demo
+
+<p align="center">
+  <img src="assets/bsd_ui.gif" alt="BSD UI Demo" width="800"/>
+</p>
+
+---
+
 ## 🚀 Quick Start (Docker Compose)
 
 ### 1. Clone repository
