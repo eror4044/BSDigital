@@ -1,43 +1,102 @@
+<template>
+  <div ref="chartRef" class="chart"></div>
+</template>
+
 <script setup lang="ts">
-import { ref, watch, onMounted } from "vue";
-import VChart from "vue-echarts";
-import type { EChartsType } from "echarts/core";
+import { onMounted, onUnmounted, ref, watch } from "vue";
+import * as echarts from "echarts";
 
-const props = defineProps<{ bids: [number, number][], asks: [number, number][] }>();
-
-const chartRef = ref<InstanceType<typeof VChart> | null>(null);
-let chart: EChartsType | null = null;
-
-function updateChart() {
-    if (!chart || !props.bids.length || !props.asks.length) return;
-
-    chart.setOption({
-        tooltip: { trigger: "axis" },
-        grid: { left: 60, right: 30, top: 40, bottom: 50 },
-        xAxis: { type: "value", name: "Price (EUR)", nameLocation: "middle", nameGap: 35 },
-        yAxis: { type: "value", name: "Cumulative BTC", nameLocation: "middle", nameGap: 45 },
-        series: [
-            { name: "Bids", type: "line", step: "end", data: props.bids, lineStyle: { color: "#d62728" }, areaStyle: { color: "rgba(214,39,40,0.4)" } },
-            { name: "Asks", type: "line", step: "end", data: props.asks, lineStyle: { color: "#2ca02c" }, areaStyle: { color: "rgba(44,160,44,0.4)" } }
-        ]
-    });
+interface Props {
+  bids: [number, number][];
+  asks: [number, number][];
 }
 
-watch(() => [props.bids, props.asks], updateChart, { deep: true });
+const props = defineProps<Props>();
+const chartRef = ref<HTMLDivElement | null>(null);
+let chart: echarts.ECharts | null = null;
+
+function prepareData(levels: [number, number][], isBid: boolean) {
+  const sorted = [...levels].sort((a, b) =>
+    isBid ? b[0] - a[0] : a[0] - b[0]
+  );
+  let cum = 0;
+  return sorted.map(([price, amount]) => {
+    cum += amount;
+    return [price, cum];
+  });
+}
+
+function render() {
+  if (!chart || !props.bids || !props.asks) return;
+
+  const bidData = prepareData(props.bids, true);
+  const askData = prepareData(props.asks, false);
+
+  const allPrices = [...bidData.map(p => p[0]), ...askData.map(p => p[0])];
+  const minPrice = Math.min(...allPrices);
+  const maxPrice = Math.max(...allPrices);
+
+  chart.setOption({
+    tooltip: {
+      trigger: "axis",
+      axisPointer: { type: "cross" }
+    },
+    grid: {
+      left: 35,
+      right: 20,
+      top: 40,
+      bottom: 40,
+    },
+    xAxis: {
+      type: "value",
+      boundaryGap: false,
+      min: minPrice,
+      max: maxPrice
+    },
+    yAxis: {
+      type: "value",
+      boundaryGap: false
+    },
+    series: [
+      {
+        name: "Bids",
+        type: "line",
+        step: "end",
+        symbol: "none",
+        data: bidData,
+        lineStyle: { color: "#0a0" },
+        areaStyle: { color: "rgba(0,160,0,0.2)" }
+      },
+      {
+        name: "Asks",
+        type: "line",
+        step: "end",
+        symbol: "none",
+        data: askData,
+        lineStyle: { color: "#c00" },
+        areaStyle: { color: "rgba(200,0,0,0.2)" }
+      }
+    ]
+  });
+}
 
 onMounted(() => {
-    if (chartRef.value?.chart) chart = chartRef.value.chart;
-    updateChart();
+  if (chartRef.value) {
+    chart = echarts.init(chartRef.value);
+    render();
+  }
 });
-</script>
 
-<template>
-    <v-chart ref="chartRef" class="chart" :option="{}" autoresize />
-</template>
+onUnmounted(() => {
+  chart?.dispose();
+});
+
+watch(() => [props.bids, props.asks], render, { deep: true });
+</script>
 
 <style scoped>
 .chart {
-    width: 100%;
-    height: 500px;
+  width: 100%;
+  height: 400px;
 }
 </style>

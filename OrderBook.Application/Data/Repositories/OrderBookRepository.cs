@@ -1,11 +1,10 @@
-﻿using OrderBook.Application.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using OrderBook.Application.Interfaces;
 using OrderBook.Application.Models;
 using System.Text.Json;
 
 namespace OrderBook.Application.Data.Repositories
 {
-    
-
     /// <inheritdoc />
     public class OrderBookRepository : IOrderBookRepository
     {
@@ -17,13 +16,19 @@ namespace OrderBook.Application.Data.Repositories
         }
 
         /// <inheritdoc />
-        public async Task SaveSnapshotAsync(IEnumerable<object> bids, IEnumerable<object> asks, CancellationToken token)
+        public async Task SaveSnapshotAsync(
+            List<(decimal Price, decimal Amount)> bids,
+            List<(decimal Price, decimal Amount)> asks,
+            CancellationToken token)
         {
+            var bidLevels = bids.Select(b => new OrderLevel(b.Price, b.Amount)).ToList();
+            var askLevels = asks.Select(a => new OrderLevel(a.Price, a.Amount)).ToList();
+
             var snapshot = new OrderBookSnapshot
             {
                 Timestamp = DateTime.UtcNow,
-                Bids = JsonSerializer.Serialize(bids),
-                Asks = JsonSerializer.Serialize(asks)
+                Bids = JsonSerializer.Serialize(bidLevels),
+                Asks = JsonSerializer.Serialize(askLevels)
             };
 
             _context.OrderBookSnapshots.Add(snapshot);
@@ -31,19 +36,14 @@ namespace OrderBook.Application.Data.Repositories
         }
 
         /// <inheritdoc />
-        public async Task SaveSnapshotAsync(List<(decimal Price, decimal Amount)> bids,
-                                            List<(decimal Price, decimal Amount)> asks,
-                                            CancellationToken token)
+        public async Task<List<OrderBookSnapshot>> GetSnapshotsAsync(int take, CancellationToken token)
         {
-            var snapshot = new OrderBookSnapshot
-            {
-                Timestamp = DateTime.UtcNow,
-                Bids = JsonSerializer.Serialize(bids),
-                Asks = JsonSerializer.Serialize(asks)
-            };
-
-            _context.OrderBookSnapshots.Add(snapshot);
-            await _context.SaveChangesAsync(token);
+            return await _context.OrderBookSnapshots
+                .OrderByDescending(x => x.Timestamp)
+                .Take(take)
+                .ToListAsync(token);
         }
     }
+
+    public record OrderLevel(decimal Price, decimal Amount);
 }

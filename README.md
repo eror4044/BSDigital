@@ -1,4 +1,3 @@
-````markdown
 # 💹 BTC/EUR Order Book — Fullstack Demo
 
 This project demonstrates a **real-time BTC/EUR order book** with:  
@@ -20,6 +19,7 @@ This project demonstrates a **real-time BTC/EUR order book** with:
 - 📊 Interactive **depth chart** (bids/asks with cumulative volumes)
 - 🔄 Real-time updates via SignalR
 - 💵 Quotes calculator for BTC amount
+- 📜 Snapshots history list (parsed on client)
 
 ---
 
@@ -28,39 +28,33 @@ This project demonstrates a **real-time BTC/EUR order book** with:
 ### 1. Clone repository
 ```bash
 git clone https://github.com/your-org/orderbook-demo.git
-````
+```
 
 ### 2. Build images
-
 ```bash
 docker compose build
 ```
 
 ### 3. Start database
-
 ```bash
 docker compose up -d db
 ```
 
 ### 4. Apply migrations
-
 ```bash
 docker compose run --rm migrate
 ```
 
 ### 5. Start API and client
-
 ```bash
 docker compose up -d api client
 ```
 
 ### 6. Access services
-
-* **Frontend (Vue)** → [http://localhost:5173](http://localhost:5173)
-* **API** → [http://localhost:5000](http://localhost:5000)
-* **SignalR Hub** → [http://localhost:5000/hubs/orderbook](http://localhost:5000/hubs/orderbook)
+* **Frontend (Vue)** → [http://localhost:5173](http://localhost:5173)  
+* **API** → [http://localhost:5000](http://localhost:5000)  
+* **SignalR Hub** → [http://localhost:5000/hubs/orderbook](http://localhost:5000/hubs/orderbook)  
 * **PostgreSQL** → `localhost:5434`
-
   ```
   user:     postgres
   password: postgres
@@ -68,7 +62,6 @@ docker compose up -d api client
   ```
 
 ### 7. Stop everything
-
 ```bash
 docker compose down
 ```
@@ -89,17 +82,17 @@ docker compose down
 
 ## 🔧 Development Notes
 
-* Ports & credentials are configurable via `.env`
+* Ports & credentials configurable via `.env`
 * Default CORS allows `http://localhost:5173`
-* Snapshots are stored in `OrderBookSnapshots` table
+* Snapshots stored in `OrderBookSnapshots` table
 * EF Core migrations applied via `docker compose run --rm migrate`
 * Client auto-reconnects to SignalR hub
+* Retention service cleans up old snapshots (>7 days)
 
 ---
 
 ## 🛠️ Tech Stack
 
-* **Backend** → .NET 8, SignalR, EF Core, PostgreSQL
-* **Frontend** → Vue 3, Vite, vue-echarts
-* **Infra** → Docker, Docker Compose
-
+* **Backend** → .NET 8, SignalR, EF Core, PostgreSQL  
+* **Frontend** → Vue 3, Vite, vue-echarts  
+* **Infra** → Docker, Docker Compose  

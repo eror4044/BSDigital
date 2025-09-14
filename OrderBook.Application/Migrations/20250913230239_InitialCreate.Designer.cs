@@ -12,7 +12,7 @@ using OrderBook.Application.Data;
 namespace OrderBook.Application.Migrations
 {
     [DbContext(typeof(OrderBookDbContext))]
-    [Migration("20250913114443_InitialCreate")]
+    [Migration("20250913230239_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
