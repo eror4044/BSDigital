@@ -1,20 +1,20 @@
-﻿using OrderBook.Application.Hubs;
-using Microsoft.AspNetCore.SignalR;
-using Newtonsoft.Json.Linq;
+﻿using System.Diagnostics;
 using System.Globalization;
 using System.Net.WebSockets;
 using System.Text;
-using System.Diagnostics;
+using System.Text.Json;
+using Microsoft.AspNetCore.SignalR;
 using OrderBook.Application.Data.Repositories;
-using OrderBook.Application.Models;
+using OrderBook.Application.Hubs;
 using OrderBook.Application.Interfaces;
+using OrderBook.Application.Models;
 
 namespace OrderBook.Application.Services;
 
 /// <summary>
-/// Background service for connecting to Bitstamp WebSocket,
-/// receiving live BTC/EUR order book updates,
-/// broadcasting them to clients via SignalR,
+/// Background service for connecting to Bitstamp API/WebSocket,
+/// maintaining BTC/EUR order book state,
+/// broadcasting updates via SignalR,
 /// and persisting snapshots into the database.
 /// </summary>
 public class BitstampService : BackgroundService
@@ -22,7 +22,8 @@ public class BitstampService : BackgroundService
     private readonly ILogger<BitstampService> _logger;
     private readonly IHubContext<OrderBookHub> _hubContext;
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly OrderBookCache _cache;
+    private readonly IOrderBookState _state;
+    private readonly HttpClient _httpClient;
 
     private readonly Stopwatch _broadcastTimer = Stopwatch.StartNew();
     private readonly Stopwatch _snapshotTimer = Stopwatch.StartNew();
@@ -34,16 +35,23 @@ public class BitstampService : BackgroundService
         ILogger<BitstampService> logger,
         IHubContext<OrderBookHub> hubContext,
         IServiceScopeFactory scopeFactory,
-        OrderBookCache cache)
+        IOrderBookState state,
+        IHttpClientFactory httpClientFactory)
     {
         _logger = logger;
         _hubContext = hubContext;
         _scopeFactory = scopeFactory;
-        _cache = cache;
+        _state = state;
+        _httpClient = httpClientFactory.CreateClient();
     }
+
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // Step 1: fetch initial snapshot via REST
+        await LoadInitialSnapshot(stoppingToken);
+
+        // Step 2: start WebSocket listener
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -59,10 +67,10 @@ public class BitstampService : BackgroundService
                     data = new { channel = "order_book_btceur" }
                 };
 
-                var msg = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(subscribe));
+                var msg = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(subscribe));
                 await ws.SendAsync(msg, WebSocketMessageType.Text, true, stoppingToken);
 
-                _logger.LogInformation("Subscribed request sent");
+                _logger.LogInformation("Subscribed to order_book_btceur");
 
                 var buffer = new byte[8192];
 
@@ -77,7 +85,7 @@ public class BitstampService : BackgroundService
 
                         if (result.MessageType == WebSocketMessageType.Close)
                         {
-                            _logger.LogWarning("Bitstamp WebSocket closed, reconnecting...");
+                            _logger.LogWarning("WebSocket closed, reconnecting...");
                             break;
                         }
 
@@ -88,92 +96,130 @@ public class BitstampService : BackgroundService
                     if (result?.MessageType == WebSocketMessageType.Close)
                         break;
 
-                    var json = sb.ToString();
-
-                    try
-                    {
-                        var obj = JObject.Parse(json);
-
-                        var eventType = (string?)obj["event"];
-                        if (eventType == "bts:subscription_succeeded")
-                        {
-                            _logger.LogInformation("Successfully subscribed to Bitstamp channel");
-                            continue;
-                        }
-
-                        if (eventType == "data" && obj["data"] != null)
-                        {
-                            var data = obj["data"];
-
-                            var bids = data["bids"]
-                                .Select(b => (Price: decimal.Parse((string)b[0], CultureInfo.InvariantCulture),
-                                              Amount: decimal.Parse((string)b[1], CultureInfo.InvariantCulture)))
-                                .OrderByDescending(x => x.Price)
-                                .ToList();
-
-                            var asks = data["asks"]
-                                .Select(a => (Price: decimal.Parse((string)a[0], CultureInfo.InvariantCulture),
-                                              Amount: decimal.Parse((string)a[1], CultureInfo.InvariantCulture)))
-                                .OrderBy(x => x.Price)
-                                .ToList();
-
-                            _cache.Bids = bids;
-                            _cache.Asks = asks;
-
-                            if (_broadcastTimer.ElapsedMilliseconds > BroadcastIntervalMs)
-                            {
-                                _broadcastTimer.Restart();
-
-                                await _hubContext.Clients.All.SendAsync("orderbook:update", new
-                                {
-                                    bids = bids.Select(b => new[] {
-                                        b.Price.ToString(CultureInfo.InvariantCulture),
-                                        b.Amount.ToString(CultureInfo.InvariantCulture)
-                                    }),
-                                    asks = asks.Select(a => new[] {
-                                        a.Price.ToString(CultureInfo.InvariantCulture),
-                                        a.Amount.ToString(CultureInfo.InvariantCulture)
-                                    })
-                                }, cancellationToken: stoppingToken);
-
-                                _logger.LogInformation("OrderBook broadcasted ({b} bids, {a} asks)", bids.Count, asks.Count);
-                            }
-
-                            var hash = ComputeSnapshotHash(bids, asks);
-                            if (_snapshotTimer.ElapsedMilliseconds > SnapshotMinIntervalMs && _lastSnapshotHash != hash)
-                            {
-                                _snapshotTimer.Restart();
-                                _lastSnapshotHash = hash;
-
-                                using var scope = _scopeFactory.CreateScope();
-                                var repo = scope.ServiceProvider.GetRequiredService<IOrderBookRepository>();
-                                await repo.SaveSnapshotAsync(bids, asks, stoppingToken);
-
-                                _logger.LogInformation("OrderBook snapshot saved (bids={b}, asks={a})", bids.Count, asks.Count);
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error parsing message: {json}", json);
-                    }
+                    await HandleMessage(sb.ToString(), stoppingToken);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Bitstamp connection failed, retry in 5s...");
+                _logger.LogError(ex, "Bitstamp connection failed, retrying in 5s...");
                 await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
     }
 
     /// <summary>
+    /// Fetches initial order book snapshot from REST API.
+    /// </summary>
+    private async Task LoadInitialSnapshot(CancellationToken token)
+    {
+        try
+        {
+            var snapshot = await _httpClient.GetFromJsonAsync<BitstampOrderBookResponse>(
+                "https://www.bitstamp.net/api/v2/order_book/btceur/",
+                cancellationToken: token);
+
+            if (snapshot is not null)
+            {
+                var bids = snapshot.Bids
+                    .Select(b => new OrderLevel(ParseDecimal(b[0]), ParseDecimal(b[1])))
+                    .ToList();
+                var asks = snapshot.Asks
+                    .Select(a => new OrderLevel(ParseDecimal(a[0]), ParseDecimal(a[1])))
+                    .ToList();
+
+                _state.Update(bids, asks);
+
+                _logger.LogInformation("Loaded initial snapshot ({b} bids, {a} asks)", bids.Count, asks.Count);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load initial snapshot");
+        }
+    }
+
+    /// <summary>
+    /// Handles incoming WebSocket message.
+    /// </summary>
+    private async Task HandleMessage(string json, CancellationToken token)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+
+            if (doc.RootElement.TryGetProperty("event", out var eventProp))
+            {
+                var eventType = eventProp.GetString();
+                if (eventType == "bts:subscription_succeeded")
+                {
+                    _logger.LogInformation("WebSocket subscription confirmed");
+                    return;
+                }
+
+                if (eventType == "data" && doc.RootElement.TryGetProperty("data", out var data))
+                {
+                    var bids = data.GetProperty("bids")
+                        .EnumerateArray()
+                        .Select(b => new OrderLevel(ParseDecimal(b[0].GetString()!), ParseDecimal(b[1].GetString()!)))
+                        .OrderByDescending(x => x.Price)
+                        .ToList();
+
+                    var asks = data.GetProperty("asks")
+                        .EnumerateArray()
+                        .Select(a => new OrderLevel(ParseDecimal(a[0].GetString()!), ParseDecimal(a[1].GetString()!)))
+                        .OrderBy(x => x.Price)
+                        .ToList();
+
+                    _state.Update(bids, asks);
+
+                    // Broadcast to SignalR clients
+                    if (_broadcastTimer.ElapsedMilliseconds > BroadcastIntervalMs)
+                    {
+                        _broadcastTimer.Restart();
+                        await _hubContext.Clients.All.SendAsync("orderbook:update", new
+                        {
+                            bids = bids.Select(b => new[] {
+                                b.Price.ToString(CultureInfo.InvariantCulture),
+                                b.Amount.ToString(CultureInfo.InvariantCulture)
+                            }),
+                            asks = asks.Select(a => new[] {
+                                a.Price.ToString(CultureInfo.InvariantCulture),
+                                a.Amount.ToString(CultureInfo.InvariantCulture)
+                            })
+                        }, cancellationToken: token);
+
+                        _logger.LogInformation("OrderBook broadcasted ({b} bids, {a} asks)", bids.Count, asks.Count);
+                    }
+
+                    // Save snapshot in DB
+                    var hash = ComputeSnapshotHash(bids, asks);
+                    if (_snapshotTimer.ElapsedMilliseconds > SnapshotMinIntervalMs && _lastSnapshotHash != hash)
+                    {
+                        _snapshotTimer.Restart();
+                        _lastSnapshotHash = hash;
+
+                        using var scope = _scopeFactory.CreateScope();
+                        var repo = scope.ServiceProvider.GetRequiredService<IOrderBookRepository>();
+                        await repo.SaveSnapshotAsync(bids, asks, token);
+
+                        _logger.LogInformation("OrderBook snapshot saved (bids={b}, asks={a})", bids.Count, asks.Count);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error handling message: {json}", json);
+        }
+    }
+
+    private static decimal ParseDecimal(string value) =>
+        decimal.Parse(value, CultureInfo.InvariantCulture);
+
+    /// <summary>
     /// Computes a hash for snapshot comparison to detect changes.
     /// </summary>
-    private static string ComputeSnapshotHash(
-        List<(decimal Price, decimal Amount)> bids,
-        List<(decimal Price, decimal Amount)> asks,
-        int topN = 100)
+    private static string ComputeSnapshotHash(List<OrderLevel> bids, List<OrderLevel> asks, int topN = 100)
     {
         using var sha = System.Security.Cryptography.SHA256.Create();
         var sb = new StringBuilder();
@@ -189,4 +235,5 @@ public class BitstampService : BackgroundService
         var bytes = Encoding.UTF8.GetBytes(sb.ToString());
         return Convert.ToHexString(sha.ComputeHash(bytes));
     }
+
 }

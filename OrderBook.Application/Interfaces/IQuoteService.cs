@@ -1,4 +1,4 @@
-﻿using OrderBook.Application.Services;
+﻿using OrderBook.Application.Models;
 namespace OrderBook.Application.Interfaces;
 
 /// <summary>

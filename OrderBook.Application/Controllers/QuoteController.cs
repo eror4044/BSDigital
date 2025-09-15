@@ -4,15 +4,6 @@ using OrderBook.Application.Services;
 
 namespace OrderBook.Application.Controllers;
 
-public record QuoteDto(
-    decimal RequestedAmountBtc,
-    decimal FilledAmountBtc,
-    decimal TotalCostEur,
-    decimal AveragePriceEur,
-    bool SufficientLiquidity,
-    DateTime SnapshotTimestampUtc);
-
-
 [ApiController]
 [Route("api/[controller]")]
 public class QuotesController : ControllerBase

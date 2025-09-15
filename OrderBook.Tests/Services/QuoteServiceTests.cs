@@ -2,73 +2,72 @@
 using OrderBook.Application.Services;
 using Xunit;
 
-namespace OrderBook.Tests.Services
+namespace OrderBook.Tests.Services;
+
+public class QuoteServiceTests
 {
-    public class QuoteServiceTests
+    [Fact]
+    public void GetQuote_WhenSufficientLiquidity_ReturnsCorrectQuote()
     {
-        [Fact]
-        public void GetQuote_WhenSufficientLiquidity_ReturnsCorrectQuote()
+        // Arrange
+        var state = new OrderBookState();
+        state.Update(new List<OrderLevel>(), new List<OrderLevel>
         {
-            // Arrange
-            var cache = new OrderBookCache
-            {
-                Asks = new List<(decimal Price, decimal Amount)>
-                {
-                    (10000m, 0.5m),
-                    (11000m, 0.5m)
-                }
-            };
-            var service = new QuoteService(cache);
+            new(10000m, 0.5m),
+            new(11000m, 0.5m)
+        });
 
-            // Act
-            var result = service.GetQuote(0.5m);
+        var service = new QuoteService(state);
 
-            // Assert
-            Assert.True(result.Sufficient);
-            Assert.Equal(0.5m, result.Filled);
-            Assert.Equal(10000m * 0.5m, result.TotalCost);
-            Assert.Equal(10000m, result.AveragePrice);
-        }
+        // Act
+        var result = service.GetQuote(0.5m);
 
-        [Fact]
-        public void GetQuote_WhenInsufficientLiquidity_ReturnsPartialFill()
+        // Assert
+        Assert.True(result.Sufficient);
+        Assert.Equal(0.5m, result.Filled);
+        Assert.Equal(10000m * 0.5m, result.TotalCost);
+        Assert.Equal(10000m, result.AveragePrice);
+    }
+
+    [Fact]
+    public void GetQuote_WhenInsufficientLiquidity_ReturnsPartialFill()
+    {
+        // Arrange
+        var state = new OrderBookState();
+        state.Update(new List<OrderLevel>(), new List<OrderLevel>
         {
-            // Arrange
-            var cache = new OrderBookCache
-            {
-                Asks = new List<(decimal Price, decimal Amount)>
-                {
-                    (10000m, 0.3m),
-                    (11000m, 0.2m)
-                }
-            };
-            var service = new QuoteService(cache);
+            new(10000m, 0.3m),
+            new(11000m, 0.2m)
+        });
 
-            // Act
-            var result = service.GetQuote(1.0m);
+        var service = new QuoteService(state);
 
-            // Assert
-            Assert.False(result.Sufficient);
-            Assert.Equal(0.5m, result.Filled);
-            Assert.Equal(10000m * 0.3m + 11000m * 0.2m, result.TotalCost);
-            Assert.Equal(result.TotalCost / result.Filled, result.AveragePrice);
-        }
+        // Act
+        var result = service.GetQuote(1.0m);
 
-        [Fact]
-        public void GetQuote_WhenNoLiquidity_ReturnsEmptyQuote()
-        {
-            // Arrange
-            var cache = new OrderBookCache { Asks = new() };
-            var service = new QuoteService(cache);
+        // Assert
+        Assert.False(result.Sufficient);
+        Assert.Equal(0.5m, result.Filled);
+        Assert.Equal(10000m * 0.3m + 11000m * 0.2m, result.TotalCost);
+        Assert.Equal(result.TotalCost / result.Filled, result.AveragePrice);
+    }
 
-            // Act
-            var result = service.GetQuote(0.5m);
+    [Fact]
+    public void GetQuote_WhenNoLiquidity_ReturnsEmptyQuote()
+    {
+        // Arrange
+        var state = new OrderBookState();
+        state.Update(new List<OrderLevel>(), new List<OrderLevel>());
 
-            // Assert
-            Assert.False(result.Sufficient);
-            Assert.Equal(0, result.Filled);
-            Assert.Equal(0, result.TotalCost);
-            Assert.Equal(0, result.AveragePrice);
-        }
+        var service = new QuoteService(state);
+
+        // Act
+        var result = service.GetQuote(0.5m);
+
+        // Assert
+        Assert.False(result.Sufficient);
+        Assert.Equal(0, result.Filled);
+        Assert.Equal(0, result.TotalCost);
+        Assert.Equal(0, result.AveragePrice);
     }
 }

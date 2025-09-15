@@ -3,33 +3,23 @@ using OrderBook.Application.Models;
 
 namespace OrderBook.Application.Services;
 
-/// <summary>
-/// Represents result of a quote calculation for buying BTC with EUR.
-/// </summary>
-public record QuoteResult(
-    decimal Requested,
-    decimal Filled,
-    decimal TotalCost,
-    decimal AveragePrice,
-    bool Sufficient,
-    DateTime TimestampUtc);
-
-
 /// <inheritdoc />
 public class QuoteService : IQuoteService
 {
-    private readonly OrderBookCache _cache;
+    private readonly IOrderBookState _state;
 
-    public QuoteService(OrderBookCache cache)
+    public QuoteService(IOrderBookState state)
     {
-        _cache = cache;
+        _state = state;
     }
 
     /// <inheritdoc />
     public QuoteResult GetQuote(decimal btcAmount)
     {
-        var asks = _cache.Asks.OrderBy(a => a.Price).ToList();
-        if (!asks.Any())
+        var (bids, asks, _) = _state.Get();
+        var orderedAsks = asks.OrderBy(a => a.Price).ToList();
+
+        if (!orderedAsks.Any())
         {
             return new QuoteResult(btcAmount, 0, 0, 0, false, DateTime.UtcNow);
         }
@@ -38,12 +28,12 @@ public class QuoteService : IQuoteService
         decimal filled = 0;
         decimal totalCost = 0;
 
-        foreach (var (price, amount) in asks)
+        foreach (var level in orderedAsks)
         {
             if (remaining <= 0) break;
 
-            var take = Math.Min(remaining, amount);
-            totalCost += take * price;
+            var take = Math.Min(remaining, level.Amount);
+            totalCost += take * level.Price;
             filled += take;
             remaining -= take;
         }

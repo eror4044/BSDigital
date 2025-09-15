@@ -17,18 +17,15 @@ namespace OrderBook.Application.Data.Repositories
 
         /// <inheritdoc />
         public async Task SaveSnapshotAsync(
-            List<(decimal Price, decimal Amount)> bids,
-            List<(decimal Price, decimal Amount)> asks,
+            List<OrderLevel> bids,
+            List<OrderLevel> asks,
             CancellationToken token)
         {
-            var bidLevels = bids.Select(b => new OrderLevel(b.Price, b.Amount)).ToList();
-            var askLevels = asks.Select(a => new OrderLevel(a.Price, a.Amount)).ToList();
-
             var snapshot = new OrderBookSnapshot
             {
                 Timestamp = DateTime.UtcNow,
-                Bids = JsonSerializer.Serialize(bidLevels),
-                Asks = JsonSerializer.Serialize(askLevels)
+                Bids = JsonSerializer.Serialize(bids),
+                Asks = JsonSerializer.Serialize(asks)
             };
 
             _context.OrderBookSnapshots.Add(snapshot);
@@ -44,6 +41,4 @@ namespace OrderBook.Application.Data.Repositories
                 .ToListAsync(token);
         }
     }
-
-    public record OrderLevel(decimal Price, decimal Amount);
 }

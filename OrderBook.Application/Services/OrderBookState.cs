@@ -1,4 +1,5 @@
 ﻿using OrderBook.Application.Interfaces;
+using OrderBook.Application.Models;
 
 namespace OrderBook.Application.Services;
 
@@ -6,14 +7,14 @@ namespace OrderBook.Application.Services;
 public class OrderBookState : IOrderBookState
 {
     private readonly object _lock = new();
-    private IReadOnlyList<(decimal price, decimal amount)> _bids = Array.Empty<(decimal, decimal)>();
-    private IReadOnlyList<(decimal price, decimal amount)> _asks = Array.Empty<(decimal, decimal)>();
+    private IReadOnlyList<OrderLevel> _bids = Array.Empty<OrderLevel>();
+    private IReadOnlyList<OrderLevel> _asks = Array.Empty<OrderLevel>();
     private DateTime _ts = DateTime.MinValue;
 
     /// <inheritdoc />
     public void Update(
-        IReadOnlyList<(decimal price, decimal amount)> bids,
-        IReadOnlyList<(decimal price, decimal amount)> asks)
+        IReadOnlyList<OrderLevel> bids,
+        IReadOnlyList<OrderLevel> asks)
     {
         lock (_lock)
         {
@@ -24,8 +25,8 @@ public class OrderBookState : IOrderBookState
     }
 
     /// <inheritdoc />
-    public (IReadOnlyList<(decimal price, decimal amount)> bids,
-            IReadOnlyList<(decimal price, decimal amount)> asks,
+    public (IReadOnlyList<OrderLevel> bids,
+            IReadOnlyList<OrderLevel> asks,
             DateTime timestampUtc) Get()
     {
         lock (_lock)
