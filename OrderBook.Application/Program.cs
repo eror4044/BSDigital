@@ -31,14 +31,24 @@ builder.Configuration
     .AddJsonFile($"appsettings.{env}.json", optional: true)
     .AddEnvironmentVariables();
 
+// DbContext
 builder.Services.AddDbContext<OrderBookDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("OrderBookDb")));
+
+// Repositories
 builder.Services.AddScoped<IOrderBookRepository, OrderBookRepository>();
+
+// Core services
 builder.Services.AddSingleton<IOrderBookState, OrderBookState>();
 builder.Services.AddSingleton<IQuoteService, QuoteService>();
-builder.Services.AddSingleton<OrderBookCache>();
+
+// Bitstamp
+builder.Services.Configure<BitstampOptions>(
+builder.Configuration.GetSection("Bitstamp"));
+builder.Services.AddHttpClient<IBitstampApi, BitstampApi>();
+builder.Services.AddSingleton<IBitstampMessageParser, BitstampMessageParser>();
+builder.Services.AddHostedService<BitstampService>();
 builder.Services.AddHostedService<OrderBookRetentionService>();
-builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
