@@ -1,58 +1,40 @@
-<script setup lang="ts">
-import { onMounted } from "vue";
-import { useOrderBook } from "../hooks/useOrderBook";
-import OrderBookChart from "./OrderBookChart.vue";
-import OrderBookQuote from "./OrderBookQuote.vue";
-import OrderBookSnapshots from "./OrderBookSnapshots.vue";
-
-const { bids, asks, status, errorMessage, amountBtc, quote, connect } = useOrderBook();
-
-onMounted(connect);
-</script>
-
 <template>
-  <div class="orderbook-page">
-    <h2>BTC/EUR Order Book Depth</h2>
-    <p>Status: {{ status }}</p>
-    <p v-if="errorMessage" class="error">Error: {{ errorMessage }}</p>
-
-    <order-book-quote v-model:amountBtc="amountBtc" :quote="quote" />
-
-    <div class="orderbook-layout">
-      <order-book-chart :bids="bids" :asks="asks" class="chart" />
-      <order-book-snapshots class="snapshots" />
-    </div>
-  </div>
+  <tr>
+    <td class="time">{{ time }}</td>
+    <td class="bid">{{ bid?.Price?.toLocaleString() ?? "" }}</td>
+    <OrderBookCell side="bid" :amount="bid?.Amount ?? null" :max="maxBid" />
+    <td class="ask">{{ ask?.Price?.toLocaleString() ?? "" }}</td>
+    <OrderBookCell side="ask" :amount="ask?.Amount ?? null" :max="maxAsk" />
+  </tr>
 </template>
 
+<script setup lang="ts">
+import OrderBookCell from "./OrderBookCell.vue";
+import type { OrderLevel } from "../shared/types/orderBook";
+
+interface Props {
+  time: string;
+  bid?: OrderLevel;
+  ask?: OrderLevel;
+  maxBid: number;
+  maxAsk: number;
+}
+
+defineProps<Props>();
+</script>
+
 <style scoped>
-.orderbook-page {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.time {
+  text-align: left;
+  color: #555;
+  font-size: 0.8rem;
 }
 
-.orderbook-layout {
-  display: flex;
-  flex-direction: row;
-  gap: 1rem;
-  height: 70vh;
+.bid {
+  color: #0a0;
 }
 
-.chart,
-.snapshots {
-  height: 100%;
-  min-height: 0;
-}
-
-.chart {
-  flex: 2;
-  min-width: 0;
-}
-
-.snapshots {
-  flex: 1;
-  min-width: 300px;
-  overflow-y: auto;
+.ask {
+  color: #c00;
 }
 </style>
