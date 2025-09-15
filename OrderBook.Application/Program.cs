@@ -38,6 +38,7 @@ builder.Services.AddSingleton<IOrderBookState, OrderBookState>();
 builder.Services.AddSingleton<IQuoteService, QuoteService>();
 builder.Services.AddSingleton<OrderBookCache>();
 builder.Services.AddHostedService<OrderBookRetentionService>();
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
 

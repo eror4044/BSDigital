@@ -1,15 +1,3 @@
-<script setup lang="ts">
-import { onMounted } from "vue";
-import { useOrderBook } from "../hooks/useOrderBook";
-import OrderBookChart from "./OrderBookChart.vue";
-import OrderBookQuote from "./OrderBookQuote.vue";
-import OrderBookSnapshots from "./OrderBookSnapshots.vue";
-
-const { bids, asks, status, errorMessage, amountBtc, quote, connect } = useOrderBook();
-
-onMounted(connect);
-</script>
-
 <template>
   <div class="orderbook-page">
     <h2>BTC/EUR Order Book Depth</h2>
@@ -24,6 +12,18 @@ onMounted(connect);
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { onMounted } from "vue";
+import { useOrderBook } from "../hooks/useOrderBook";
+import OrderBookChart from "./OrderBookChart.vue";
+import OrderBookQuote from "./OrderBookQuote.vue";
+import OrderBookSnapshots from "./OrderBookSnapshots.vue";
+
+const { bids, asks, status, errorMessage, amountBtc, quote, connect } = useOrderBook();
+
+onMounted(connect);
+</script>
 
 <style scoped>
 .orderbook-page {

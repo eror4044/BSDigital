@@ -5,13 +5,9 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import * as echarts from "echarts";
+import type { OrderBookChartProps } from "@/shared/types/props";
 
-interface Props {
-  bids: [number, number][];
-  asks: [number, number][];
-}
-
-const props = defineProps<Props>();
+const props = defineProps<OrderBookChartProps>();
 const chartRef = ref<HTMLDivElement | null>(null);
 let chart: echarts.ECharts | null = null;
 
@@ -37,26 +33,10 @@ function render() {
   const maxPrice = Math.max(...allPrices);
 
   chart.setOption({
-    tooltip: {
-      trigger: "axis",
-      axisPointer: { type: "cross" }
-    },
-    grid: {
-      left: 35,
-      right: 20,
-      top: 40,
-      bottom: 20,
-    },
-    xAxis: {
-      type: "value",
-      boundaryGap: false,
-      min: minPrice,
-      max: maxPrice
-    },
-    yAxis: {
-      type: "value",
-      boundaryGap: false
-    },
+    tooltip: { trigger: "axis", axisPointer: { type: "cross" } },
+    grid: { left: 35, right: 20, top: 40, bottom: 20 },
+    xAxis: { type: "value", boundaryGap: false, min: minPrice, max: maxPrice },
+    yAxis: { type: "value", boundaryGap: false },
     series: [
       {
         name: "Bids",
@@ -86,11 +66,7 @@ onMounted(() => {
     render();
   }
 });
-
-onUnmounted(() => {
-  chart?.dispose();
-});
-
+onUnmounted(() => chart?.dispose());
 watch(() => [props.bids, props.asks], render, { deep: true });
 </script>
 
