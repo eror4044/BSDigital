@@ -24,7 +24,7 @@ function prepareData(levels: OrderLevel[], isBid: boolean) {
   let cum = 0;
   return sorted.map(({ Price, Amount }) => {
     cum += Amount;
-    return [Price, cum]; // echarts принимает массивы [x, y]
+    return [Price, cum];
   });
 }
 
