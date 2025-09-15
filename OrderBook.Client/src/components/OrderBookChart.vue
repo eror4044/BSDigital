@@ -5,20 +5,26 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import * as echarts from "echarts";
-import type { OrderBookChartProps } from "@/shared/types/props";
+import type { OrderLevel } from "@/shared/types/orderBook";
 
-const props = defineProps<OrderBookChartProps>();
+interface Props {
+  bids: OrderLevel[];
+  asks: OrderLevel[];
+}
+
+const props = defineProps<Props>();
 const chartRef = ref<HTMLDivElement | null>(null);
 let chart: echarts.ECharts | null = null;
 
-function prepareData(levels: [number, number][], isBid: boolean) {
+function prepareData(levels: OrderLevel[], isBid: boolean) {
   const sorted = [...levels].sort((a, b) =>
-    isBid ? b[0] - a[0] : a[0] - b[0]
+    isBid ? b.Price - a.Price : a.Price - b.Price
   );
+
   let cum = 0;
-  return sorted.map(([price, amount]) => {
-    cum += amount;
-    return [price, cum];
+  return sorted.map(({ Price, Amount }) => {
+    cum += Amount;
+    return [Price, cum]; // echarts принимает массивы [x, y]
   });
 }
 
