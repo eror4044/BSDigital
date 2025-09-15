@@ -1,5 +1,4 @@
-﻿using System.Net.Http.Json;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using OrderBook.Application.Models;
 
 namespace OrderBook.Application.Services;
