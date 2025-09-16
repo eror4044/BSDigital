@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: ./OrderBook.Application
+      dockerfile: Dockerfile
+    container_name: orderbook_api
+    ports:
+      - "5000:8080"   # HTTP
+      - "5001:8081"   # HTTPS
+    restart: unless-stopped
+    environment:
+      - ConnectionStrings__OrderBookDb=Host=db;Port=5432;Database=orderbookdb;Username=postgres;Password=postgres
+      - DOTNET_RUNNING_IN_CONTAINER=true
+    depends_on:
+      - db
+
+  migrate:
+    build:
+      context: ./OrderBook.Application
+      dockerfile: Dockerfile
+      target: build
+    container_name: orderbook_migrate
+    depends_on:
+      - db
+    environment:
+      - ConnectionStrings__OrderBookDb=Host=db;Port=5432;Database=orderbookdb;Username=postgres;Password=postgres
+    entrypoint: >
+      sh -c "dotnet ef database update --project OrderBook.Application.csproj --startup-project . --verbose"
+
+  db:
+    image: postgres:16
+    container_name: orderbook_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: orderbookdb
+    ports:
+      - "5434:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  client:
+    build:
+      context: ./OrderBook.Client
+      dockerfile: Dockerfile
+    container_name: orderbook_client
+    ports:
+      - "5173:5173"
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=http://localhost:5000
+    volumes:
+      - ./OrderBook.Client:/app
+      - /app/node_modules
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+    depends_on:
+      - api
+
+volumes:
+  db_data:
