@@ -1,5 +1,5 @@
-import { ref } from "vue";
-import type { OrderBookSnapshot } from "../shared/types/orderBook";
+import { ref } from 'vue';
+import type { OrderBookSnapshot } from '../shared/types/orderBook';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -16,7 +16,7 @@ export function useOrderBookSnapshots() {
       snapshots.value = data;
       error.value = null;
     } catch (e) {
-      console.error("fetchSnapshots error", e);
+      console.error('fetchSnapshots error', e);
       error.value = (e as Error).message;
     } finally {
       loading.value = false;

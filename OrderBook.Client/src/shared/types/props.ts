@@ -1,5 +1,5 @@
 export interface OrderBookCellProps {
-  side: "bid" | "ask";
+  side: 'bid' | 'ask';
   amount: number | null;
   max: number;
 }
